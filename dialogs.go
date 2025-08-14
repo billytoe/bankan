@@ -17,6 +17,7 @@ import (
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/liujiawm/gocalendar"
 )
 
 /* ================================================================================ Public functions */
@@ -71,19 +72,19 @@ func getDateTypeLabels() (string, string, string) {
 func getWeekdayColor(weekday time.Weekday) string {
 	switch weekday {
 	case time.Monday:
-		return "🟢" // 绿色
+		return "🟢" // 绿色1
 	case time.Tuesday:
-		return "🔵" // 蓝色
+		return "🔵" // 蓝色2
 	case time.Wednesday:
-		return "🟡" // 黄色
+		return "🟡" // 黄色3
 	case time.Thursday:
-		return "🟠" // 橙色
+		return "🟠" // 橙色4
 	case time.Friday:
-		return "🔴" // 红色
+		return "🟣" // 紫色5
 	case time.Saturday:
-		return "⚪" // 白色
+		return "⚪" // 白色6
 	case time.Sunday:
-		return "🟣" // 紫色
+		return "🔴" // 红色7
 	default:
 		return "⚫" // 黑色
 	}
@@ -127,52 +128,165 @@ func getCurrentDateString(dateType string) string {
 }
 
 func getLunarInfo(date time.Time) string {
-	// 农历转换算法（基于农历数据表）
-	lunarYear, lunarMonth, lunarDay, isLeapMonth := solarToLunar(date.Year(), int(date.Month()), date.Day())
+	// 使用gocalendar库进行精确的农历转换和节气计算 <mcreference link="https://github.com/liujiawm/gocalendar" index="1">1</mcreference>
 	lang := getSystemLanguage()
+
+	// 创建日历实例并获取指定日期的信息
+	cal := gocalendar.DefaultCalendar()
+	items := cal.GenerateWithDate(date.Year(), int(date.Month()), date.Day())
+
+	// 查找当前日期的信息
+	var currentItem *gocalendar.CalendarItem
+	for _, item := range items {
+		if item.Time.Year() == date.Year() && item.Time.Month() == date.Month() && item.Time.Day() == date.Day() {
+			currentItem = item
+			break
+		}
+	}
+
+	if currentItem == nil {
+		// 如果没有找到，返回基本格式
+		if lang == "zh" {
+			return fmt.Sprintf("%d年%d月%d日", date.Year(), int(date.Month()), date.Day())
+		}
+		return fmt.Sprintf("%d/%d/%d", date.Year(), int(date.Month()), date.Day())
+	}
+
+	// 获取农历信息
+	lunarDate := currentItem.LunarDate
+
+	// 获取节气信息
+	solarTermInfo := ""
+	if currentItem.SolarTerm != nil && currentItem.SolarTerm.Name != "" {
+		if lang == "zh" {
+			solarTermInfo = " (" + currentItem.SolarTerm.Name + ")"
+		} else {
+			// 简单的英文翻译映射
+			englishName := getSolarTermEnglishName(currentItem.SolarTerm.Name)
+			solarTermInfo = " (" + englishName + ")"
+		}
+	}
+
+	// 获取十斋日信息
+	fastingDayInfo := getLunarFastingDayInfo(lunarDate.Day, lang)
+	if fastingDayInfo != "" {
+		if solarTermInfo != "" {
+			solarTermInfo = solarTermInfo + ", " + fastingDayInfo
+		} else {
+			solarTermInfo = " (" + fastingDayInfo + ")"
+		}
+	}
 
 	if lang == "zh" {
-		monthName := getLunarMonthName(lunarYear, lunarMonth, isLeapMonth)
-		return fmt.Sprintf("%d年%s%d日", lunarYear, monthName, lunarDay)
+		// 中文格式：农历年份 + 月份名称 + 日期 + 节气 + 十斋日
+		monthName := lunarDate.MonthName
+		dayName := lunarDate.DayName
+		if lunarDate.LeapStr != "" {
+			monthName = lunarDate.LeapStr + monthName
+		}
+		return fmt.Sprintf("%d年%s%s%s", lunarDate.Year, monthName, dayName, solarTermInfo)
 	}
-	if isLeapMonth {
-		return fmt.Sprintf("%d/Leap%d/%d", lunarYear, lunarMonth, lunarDay)
+
+	// 英文格式
+	if lunarDate.LeapStr != "" {
+		return fmt.Sprintf("%d/Leap%d/%d%s", lunarDate.Year, lunarDate.Month, lunarDate.Day, solarTermInfo)
 	}
-	return fmt.Sprintf("%d/%d/%d", lunarYear, lunarMonth, lunarDay)
+	return fmt.Sprintf("%d/%d/%d%s", lunarDate.Year, lunarDate.Month, lunarDate.Day, solarTermInfo)
 }
 
-func getSolarTerm(date time.Time) string {
-	// 简化的节气计算
-	lang := getSystemLanguage()
-	month := int(date.Month())
-	day := date.Day()
+// 获取农历十斋日信息
+func getLunarFastingDayInfo(lunarDay int, lang string) string {
+	// 十斋日：初一、初八、十四、十五、十八、二十三、二十四、二十八、二十九、三十
+	// 六斋日：初八、十四、十五、二十三、二十九、三十
+	switch lunarDay {
+	case 1:
+		if lang == "zh" {
+			return "十斋日"
+		}
+		return "Ten Fasting Days"
+	case 8:
+		if lang == "zh" {
+			return "六斋日/十斋日"
+		}
+		return "Six/Ten Fasting Days"
+	case 14:
+		if lang == "zh" {
+			return "六斋日/十斋日"
+		}
+		return "Six/Ten Fasting Days"
+	case 15:
+		if lang == "zh" {
+			return "六斋日/十斋日"
+		}
+		return "Six/Ten Fasting Days"
+	case 18:
+		if lang == "zh" {
+			return "十斋日"
+		}
+		return "Ten Fasting Days"
+	case 23:
+		if lang == "zh" {
+			return "六斋日/十斋日"
+		}
+		return "Six/Ten Fasting Days"
+	case 24:
+		if lang == "zh" {
+			return "十斋日"
+		}
+		return "Ten Fasting Days"
+	case 28:
+		if lang == "zh" {
+			return "十斋日"
+		}
+		return "Ten Fasting Days"
+	case 29:
+		if lang == "zh" {
+			return "六斋日/十斋日"
+		}
+		return "Six/Ten Fasting Days"
+	case 30:
+		if lang == "zh" {
+			return "六斋日/十斋日"
+		}
+		return "Six/Ten Fasting Days"
+	default:
+		return ""
+	}
+}
 
-	// 简单的节气判断（实际需要更精确的计算）
-	if month == 3 && day >= 20 && day <= 22 {
-		if lang == "zh" {
-			return "春分"
-		}
-		return "Spring Equinox"
+// 节气中英文名称映射
+func getSolarTermEnglishName(chineseName string) string {
+	solarTermMap := map[string]string{
+		"立春": "Beginning of Spring",
+		"雨水": "Rain Water",
+		"惊蛰": "Awakening of Insects",
+		"春分": "Spring Equinox",
+		"清明": "Clear and Bright",
+		"谷雨": "Grain Rain",
+		"立夏": "Beginning of Summer",
+		"小满": "Grain Buds",
+		"芒种": "Grain in Ear",
+		"夏至": "Summer Solstice",
+		"小暑": "Slight Heat",
+		"大暑": "Great Heat",
+		"立秋": "Beginning of Autumn",
+		"处暑": "Stopping the Heat",
+		"白露": "White Dew",
+		"秋分": "Autumn Equinox",
+		"寒露": "Cold Dew",
+		"霜降": "Frost's Descent",
+		"立冬": "Beginning of Winter",
+		"小雪": "Slight Snow",
+		"大雪": "Great Snow",
+		"冬至": "Winter Solstice",
+		"小寒": "Slight Cold",
+		"大寒": "Great Cold",
 	}
-	if month == 6 && day >= 20 && day <= 22 {
-		if lang == "zh" {
-			return "夏至"
-		}
-		return "Summer Solstice"
+
+	if englishName, exists := solarTermMap[chineseName]; exists {
+		return englishName
 	}
-	if month == 9 && day >= 22 && day <= 24 {
-		if lang == "zh" {
-			return "秋分"
-		}
-		return "Autumn Equinox"
-	}
-	if month == 12 && day >= 20 && day <= 22 {
-		if lang == "zh" {
-			return "冬至"
-		}
-		return "Winter Solstice"
-	}
-	return ""
+	return chineseName // 如果没有找到映射，返回原名称
 }
 
 func getTibetanInfo(date time.Time) string {
@@ -198,14 +312,196 @@ func getTibetanSpecialDays(date time.Time) string {
 	lang := getSystemLanguage()
 	_, _, tibetanDay := solarToTibetan(date.Year(), int(date.Month()), date.Day())
 
+	// 获取理发吉凶信息
+	hairCutInfo := getTibetanHairCutInfo(tibetanDay, lang)
+
+	// 获取殊胜日信息
+	specialDayInfo := getTibetanSpecialDayInfo(tibetanDay, lang)
+
+	// 组合信息
+	var result []string
+	if specialDayInfo != "" {
+		result = append(result, specialDayInfo)
+	}
+	if hairCutInfo != "" {
+		result = append(result, hairCutInfo)
+	}
+
+	if len(result) > 0 {
+		return strings.Join(result, ", ")
+	}
+	return ""
+}
+
+// 获取藏历理发吉凶信息
+func getTibetanHairCutInfo(tibetanDay int, lang string) string {
+	// 根据用户提供的藏历理发吉凶对照表
+	switch tibetanDay {
+	case 1:
+		if lang == "zh" {
+			return "理发凶🔴: 短命减寿"
+		}
+		return "Hair Cut: Auspicious"
+	case 2:
+		if lang == "zh" {
+			return "理发凶🔴: 遇传染病"
+		}
+		return "Hair Cut: Risk of Contagious Disease"
+	case 3:
+		if lang == "zh" {
+			return "理发吉: 财富增上"
+		}
+		return "Hair Cut: Sweet"
+	case 4:
+		if lang == "zh" {
+			return "理发凶🔴: 低贱, 豆腐店主"
+		}
+		return "Hair Cut: Lowly, Tofu Shop Owner"
+	case 5:
+		if lang == "zh" {
+			return "理发凶🔴: 易患疾病"
+		}
+		return "Hair Cut: Prone to Illness, Inauspicious"
+	case 6:
+		if lang == "zh" {
+			return "理发吉: 面色红润"
+		}
+		return "Hair Cut: Rosy Complexion"
+	case 7:
+		if lang == "zh" {
+			return "理发凶🔴: 易争吵"
+		}
+		return "Hair Cut: Prone to Arguments"
+	case 8:
+		if lang == "zh" {
+			return "理发吉: 长寿"
+		}
+		return "Hair Cut: Longevity"
+	case 9:
+		if lang == "zh" {
+			return "理发吉: 姻缘"
+		}
+		return "Hair Cut: Meet Monks, Sharing"
+	case 10:
+		if lang == "zh" {
+			return "理发凶🔴: 遇传染病"
+		}
+		return "Hair Cut: Contagious Disease"
+	case 11:
+		if lang == "zh" {
+			return "理发吉: 增长智慧"
+		}
+		return "Hair Cut: Increase Wisdom"
+	case 12:
+		if lang == "zh" {
+			return "理发凶🔴: 招致疾病"
+		}
+		return "Hair Cut: Attract Disease, Inauspicious"
+	case 13:
+		if lang == "zh" {
+			return "理发吉: 佛慧增长"
+		}
+		return "Hair Cut: Skill Improvement"
+	case 14:
+		if lang == "zh" {
+			return "理发吉: 增长财富"
+		}
+		return "Hair Cut: Growth of Things"
+	case 15:
+		if lang == "zh" {
+			return "理发吉: 增长福报"
+		}
+		return "Hair Cut: Increase Merit"
+	case 16:
+		if lang == "zh" {
+			return "理发凶🔴: 患病"
+		}
+		return "Hair Cut: Illness"
+	case 17:
+		if lang == "zh" {
+			return "理发凶🔴: 易失明, 眼疾 han"
+		}
+		return "Hair Cut: Risk of Blindness, Eye Disease"
+	case 18:
+		if lang == "zh" {
+			return "理发凶🔴: 丢失财物"
+		}
+		return "Hair Cut: Loss of Property"
+	case 19:
+		if lang == "zh" {
+			return "理发吉凶: 增长寿命"
+		}
+		return "Hair Cut: Increase Lifespan"
+	case 20:
+		if lang == "zh" {
+			return "理发凶🔴: 易挨饿"
+		}
+		return "Hair Cut: Prone to Hunger"
+	case 21:
+		if lang == "zh" {
+			return "理发凶🔴: 易患眼疾, 失明"
+		}
+		return "Hair Cut: Eye Disease, Blindness"
+	case 22:
+		if lang == "zh" {
+			return "理发吉: 增长财物"
+		}
+		return "Hair Cut: Increase Wealth"
+	case 23:
+		if lang == "zh" {
+			return "理发凶🔴: 患麻风病等"
+		}
+		return "Hair Cut: Leprosy etc."
+	case 24:
+		if lang == "zh" {
+			return "理发凶🔴: 遇口舌, 凶"
+		}
+		return "Hair Cut: Disputes, Inauspicious"
+	case 25:
+		if lang == "zh" {
+			return "理发凶🔴: 得白内障"
+		}
+		return "Hair Cut: Get Cataract"
+	case 26:
+		if lang == "zh" {
+			return "理发吉: 得快乐"
+		}
+		return "Hair Cut: Get Happiness"
+	case 27:
+		if lang == "zh" {
+			return "理发凶🔴: 吐血, 凶"
+		}
+		return "Hair Cut: Vomit Blood, Inauspicious"
+	case 28:
+		if lang == "zh" {
+			return "理发凶🔴: 易患疯癫"
+		}
+		return "Hair Cut: Prone to Madness"
+	case 29:
+		if lang == "zh" {
+			return "理发凶🔴: 易患白癜风"
+		}
+		return "Hair Cut: Prone to Vitiligo"
+	case 30:
+		if lang == "zh" {
+			return "理发凶🔴: 死于争斗中"
+		}
+		return "Hair Cut: Die in Conflict"
+	default:
+		return ""
+	}
+}
+
+// 获取藏历殊胜日信息
+func getTibetanSpecialDayInfo(tibetanDay int, lang string) string {
 	// 根据藏历日期返回对应的特殊日期
 	switch tibetanDay {
 	case 4:
 		// 文殊菩萨剪头日
 		if lang == "zh" {
-			return "文殊菩萨剪头日"
+			return ""
 		}
-		return "Manjushri Hair Cutting Day"
+		return ""
 	case 8:
 		// 药师佛节日/殊胜日
 		if lang == "zh" {
@@ -399,96 +695,8 @@ func ShowSaveAsDialog(defaultFileURI fyne.URI, confirmedCallback func(writer fyn
 
 /* ================================================================================ Calendar Conversion Functions */
 
-// 农历年份数据结构
-type LunarYearData struct {
-	Year       int   // 农历年份
-	NewYearDay int   // 农历新年在公历中是一年的第几天
-	MonthDays  []int // 每个月的天数，闰月用负数表示月份位置
-	LeapMonth  int   // 闰月月份，0表示无闰月
-}
-
-// 农历数据表（2020-2030年）
-var lunarYearDataMap = map[int]*LunarYearData{
-	2020: {2020, 25, []int{30, 29, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30}, 4}, // 闰四月
-	2021: {2021, 12, []int{29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 30, 29}, 0},
-	2022: {2022, 1, []int{30, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30}, 0},
-	2023: {2023, 22, []int{30, 29, 30, 29, 30, 29, 30, 29, 30, 30, 29, 30}, 2}, // 闰二月
-	2024: {2024, 10, []int{29, 30, 29, 30, 29, 30, 29, 30, 30, 29, 30, 29}, 0},
-	2025: {2025, 29, []int{30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30}, 6}, // 闰六月
-	2026: {2026, 17, []int{29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 30, 29}, 0},
-	2027: {2027, 6, []int{30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 30}, 0},
-	2028: {2028, 26, []int{29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30}, 5}, // 闰五月
-	2029: {2029, 13, []int{30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29}, 0},
-	2030: {2030, 3, []int{30, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30}, 0},
-}
-
-// 获取农历年份数据
-func getLunarYearData(year int) *LunarYearData {
-	return lunarYearDataMap[year]
-}
-
-// 农历转换函数
-func solarToLunar(year, month, day int) (int, int, int, bool) {
-	// 精确的农历转换算法，基于农历数据表
-	lunarData := getLunarYearData(year)
-	if lunarData == nil {
-		// 如果没有数据，返回近似值
-		return year, month, day, false
-	}
-
-	// 计算从公历年初到指定日期的天数
-	dayOfYear := getDayOfYear(year, month, day)
-
-	// 农历新年在公历中的天数
-	lunarNewYearDay := lunarData.NewYearDay
-
-	var lunarYear int
-	var daysFromLunarNewYear int
-
-	if dayOfYear >= lunarNewYearDay {
-		// 在农历新年之后
-		lunarYear = year
-		daysFromLunarNewYear = dayOfYear - lunarNewYearDay
-	} else {
-		// 在农历新年之前，属于上一个农历年
-		prevLunarData := getLunarYearData(year - 1)
-		if prevLunarData == nil {
-			return year - 1, month, day, false
-		}
-		lunarYear = year - 1
-		prevYearDays := 365
-		if isLeapYear(year - 1) {
-			prevYearDays = 366
-		}
-		daysFromLunarNewYear = (prevYearDays - prevLunarData.NewYearDay) + dayOfYear
-		lunarData = prevLunarData
-	}
-
-	// 根据农历月份数据计算月份和日期
-	currentDay := daysFromLunarNewYear
-	for i, monthDays := range lunarData.MonthDays {
-		if currentDay < monthDays {
-			lunarMonth := i + 1
-			lunarDay := currentDay + 1
-			// 检查是否为闰月
-			isLeapMonth := false
-			if lunarData.LeapMonth > 0 {
-				// 闰月在第LeapMonth个月之后
-				if i == lunarData.LeapMonth {
-					isLeapMonth = true
-					lunarMonth = lunarData.LeapMonth
-				} else if i > lunarData.LeapMonth {
-					lunarMonth = i // 闰月后的月份
-				}
-			}
-			return lunarYear, lunarMonth, lunarDay, isLeapMonth
-		}
-		currentDay -= monthDays
-	}
-
-	// 如果超出范围，返回最后一天
-	return lunarYear, 12, 30, false
-}
+// 注意：农历和节气计算现在使用gocalendar库提供精确算法
+// 基于Jean Meeus的《Astronomical Algorithms》和NASA数据
 
 // 藏历数据结构
 type TibetanYearData struct {
@@ -644,23 +852,7 @@ func solarToTibetanApproximate(year, month, day int) (int, int, int) {
 	}
 }
 
-// 获取农历月份名称（支持闰月）
-func getLunarMonthName(year, month int, isLeapMonth bool) string {
-	lang := getSystemLanguage()
-	if lang == "zh" {
-		monthNames := []string{"", "正月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "冬月", "腊月"}
-		if month >= 1 && month <= 12 {
-			if isLeapMonth {
-				return "闰" + monthNames[month]
-			}
-			return monthNames[month]
-		}
-	}
-	if isLeapMonth {
-		return fmt.Sprintf("闰%d月", month)
-	}
-	return fmt.Sprintf("%d月", month)
-}
+// getLunarMonthName函数已被gocalendar库的MonthName字段替代
 
 // 辅助函数：获取一年中的第几天
 func getDayOfYear(year, month, day int) int {
@@ -681,16 +873,7 @@ func isLeapYear(year int) bool {
 	return (year%4 == 0 && year%100 != 0) || (year%400 == 0)
 }
 
-// 辅助函数：获取农历新年在公历中的大致日期（一年中的第几天）
-func getLunarNewYearDay(year int) int {
-	// 简化计算，农历新年大致在1月21日到2月20日之间
-	// 这里使用一个基本的周期性近似
-	base := 21 + ((year-2000)*11)%30 // 简化的周期计算
-	if base > 51 {                   // 如果超过2月20日（31+20=51）
-		base = base - 30
-	}
-	return base
-}
+// getLunarNewYearDay函数已被gocalendar库替代，提供更精确的计算
 
 /* ================================================================================ Private functions */
 func getParentListableURI(file fyne.URI) fyne.ListableURI {
