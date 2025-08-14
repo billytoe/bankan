@@ -67,8 +67,15 @@ func restorePreferences() {
 }
 
 
+func autoSave() {
+	if saveFileURI != nil {
+		saveBoardURI(board, saveFileURI)
+	}
+}
+
+
 func windowCloseInterceptor() {
-	ShowConfirmDialog("Close Program", "This will discard any unsaved changes of the current board.\n\nAre you sure?\n", window.Close)
+	window.Close()
 }
 
 
@@ -184,6 +191,7 @@ func showEditBoardNameDialog() {
 		func(text string) {
 			board.Name = text
 			syncBoardNameLabel()
+			autoSave()
 		},
 	)
 }

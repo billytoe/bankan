@@ -71,6 +71,7 @@ func (w *Item) ShowEditItemDialog() {
 			w.Description = description
 			w.Style       = style
 			w.Refresh()
+			autoSave()
 		},
 	)
 }
@@ -80,6 +81,7 @@ func (w *Item) ShowRemoveItemConfirmDialog() {
 	ShowConfirmDialog("Remove Item", "This will remove the item from the board.\n\nAre you sure?\n",
 		func() {
 			board.RemoveItem(w)
+			autoSave()
 		},
 	)
 }

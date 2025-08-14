@@ -70,6 +70,7 @@ func (w *Stage) AppendItem(title string, tags []Tag, description string, style I
 
 	w.Items = append(w.Items, item)
 	w.Refresh()
+	autoSave()
 }
 
 
@@ -88,6 +89,7 @@ func (w *Stage) InsertItem(after bool, reference *Item, title string, tags []Tag
 	item := NewItem(title, tags, description, style)
 	w.Items[i] = item
 	w.Refresh()
+	autoSave()
 
 	return true
 }
@@ -101,13 +103,14 @@ func (w *Stage) RemoveItem(toRemove *Item) bool {
 
 	w.Items = append(w.Items[:i], w.Items[i+1:]...)
 	w.Refresh()
+	autoSave()
 
 	return true
 }
 
 
 func (w *Stage) ShowCreateItemDialog() {
-	ShowItemDialog("New", "", "", "", ItemStyle{ color.RGBA{ 0, 0, 0, 255 }, color.RGBA{ 255, 255, 153, 255 } },
+	ShowItemDialog("New", "", "", "", ItemStyle{ color.RGBA{ 0, 0, 0, 255 }, color.RGBA{ 192, 192, 192, 255 } },
 		func(title, tagEditString, description string, style ItemStyle) {
 			w.AppendItem(title, ParseTagEditString(tagEditString), description, style)
 		},
@@ -120,6 +123,7 @@ func (w *Stage) ShowEditStageTitleDialog() {
 		func(text string) {
 			w.Title = text
 			w.Refresh()
+			autoSave()
 		},
 	)
 }
@@ -129,6 +133,7 @@ func (w *Stage) ShowRemoveStageConfirmDialog() {
 	ShowConfirmDialog("Remove Stage", "This will remove the stage and all contained items from the board.\n\nAre you sure?\n",
 		func() {
 			board.RemoveStage(w)
+			autoSave()
 		},
 	)
 }

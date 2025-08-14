@@ -108,6 +108,7 @@ func (w *Board) AppendStage(title string) {
 
 	w.Stages = append(w.Stages, stage)
 	w.Refresh()
+	autoSave()
 }
 
 
@@ -119,6 +120,7 @@ func (w *Board) RemoveStage(toRemove *Stage) bool {
 
 	w.Stages = append(w.Stages[:i], w.Stages[i+1:]...)
 	w.Refresh()
+	autoSave()
 
 	return true
 }
