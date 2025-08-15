@@ -80,11 +80,11 @@ func getWeekdayColor(weekday time.Weekday) string {
 	case time.Thursday:
 		return "🟠" // 橙色4
 	case time.Friday:
-		return "🟣" // 紫色5
+		return "🔴" // 红色7
 	case time.Saturday:
 		return "⚪" // 白色6
 	case time.Sunday:
-		return "🔴" // 红色7
+		return "🟣" // 紫色5
 	default:
 		return "⚫" // 黑色
 	}
@@ -179,10 +179,10 @@ func getLunarInfo(date time.Time) string {
 
 	if lang == "zh" {
 		// 中文格式：农历年份 + 月份名称 + 日期 + 节气 + 十斋日
-		monthName := lunarDate.MonthName
+		monthName := lunarDate.MonthName + "月" // 添加"月"字
 		dayName := lunarDate.DayName
 		if lunarDate.LeapStr != "" {
-			monthName = lunarDate.LeapStr + monthName
+			monthName = lunarDate.LeapStr + lunarDate.MonthName + "月" // 闰月也要添加"月"字
 		}
 		return fmt.Sprintf("%d年%s%s%s", lunarDate.Year, monthName, dayName, solarTermInfo)
 	}
@@ -374,7 +374,7 @@ func getTibetanHairCutInfo(tibetanDay int, lang string) string {
 		return "Hair Cut: Prone to Arguments"
 	case 8:
 		if lang == "zh" {
-			return "理发吉: 长寿"
+			return "理发吉: 得长寿"
 		}
 		return "Hair Cut: Longevity"
 	case 9:
@@ -429,7 +429,7 @@ func getTibetanHairCutInfo(tibetanDay int, lang string) string {
 		return "Hair Cut: Loss of Property"
 	case 19:
 		if lang == "zh" {
-			return "理发吉凶: 增长寿命"
+			return "理发吉: 增长寿命"
 		}
 		return "Hair Cut: Increase Lifespan"
 	case 20:
