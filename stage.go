@@ -67,8 +67,8 @@ func (w *Stage) AppendItem(title string, tags []Tag, description string, style I
 	autoSave()
 }
 
-func (w *Stage) AppendItemWithDateType(title string, tags []Tag, description string, style ItemStyle, dateType string) {
-	item := NewItem(title, tags, description, style, dateType)
+func (w *Stage) AppendItemWithDataType(title string, tags []Tag, description string, style ItemStyle, dataType string) {
+	item := NewItem(title, tags, description, style, dataType)
 
 	w.Items = append(w.Items, item)
 	w.Refresh()
@@ -95,7 +95,7 @@ func (w *Stage) InsertItem(after bool, reference *Item, title string, tags []Tag
 	return true
 }
 
-func (w *Stage) InsertItemWithDateType(after bool, reference *Item, title string, tags []Tag, description string, style ItemStyle, dateType string) bool {
+func (w *Stage) InsertItemWithDataType(after bool, reference *Item, title string, tags []Tag, description string, style ItemStyle, dataType string) bool {
 	i := w.ItemIndex(reference)
 	if i < 0 {
 		return false
@@ -107,7 +107,7 @@ func (w *Stage) InsertItemWithDateType(after bool, reference *Item, title string
 	w.Items = append(w.Items, nil)
 	copy(w.Items[i+1:], w.Items[i:])
 
-	item := NewItem(title, tags, description, style, dateType)
+	item := NewItem(title, tags, description, style, dataType)
 	w.Items[i] = item
 	w.Refresh()
 	autoSave()
@@ -129,9 +129,9 @@ func (w *Stage) RemoveItem(toRemove *Item) bool {
 }
 
 func (w *Stage) ShowCreateItemDialog() {
-	ShowItemDialogWithDateType("New", "", "", "", ItemStyle{color.RGBA{0, 0, 0, 255}, color.RGBA{192, 192, 192, 255}}, "Normal",
-		func(title, tagEditString, description string, style ItemStyle, dateType string) {
-			w.AppendItemWithDateType(title, ParseTagEditString(tagEditString), description, style, dateType)
+	ShowItemDialogWithDataType("New", "", "", "", ItemStyle{color.RGBA{0, 0, 0, 255}, color.RGBA{192, 192, 192, 255}}, "Normal",
+		func(title, tagEditString, description string, style ItemStyle, dataType string) {
+			w.AppendItemWithDataType(title, ParseTagEditString(tagEditString), description, style, dataType)
 		},
 	)
 }

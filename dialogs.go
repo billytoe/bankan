@@ -60,7 +60,7 @@ func getSystemLanguage() string {
 	return "en"
 }
 
-func getDateTypeLabels() (string, string, string) {
+func getDataTypeLabels() (string, string, string) {
 	lang := getSystemLanguage()
 	if lang == "zh" {
 		return "公历", "农历", "藏历"
@@ -100,13 +100,12 @@ func getWeekdayName(weekday time.Weekday) string {
 	return weekdays[weekday]
 }
 
-func getCurrentDateString(dateType string) string {
+func getCurrentDateString(dataType string) string {
 	now := time.Now()
 	lang := getSystemLanguage()
-	greg, lunar, tibetan := getDateTypeLabels()
 
-	switch dateType {
-	case greg: // 公历
+	switch dataType {
+	case "Gregorian": // 公历
 		weekdayColor := getWeekdayColor(now.Weekday())
 		weekdayName := getWeekdayName(now.Weekday())
 		if lang == "zh" {
@@ -114,11 +113,11 @@ func getCurrentDateString(dateType string) string {
 		}
 		return now.Format("2006-01-02") + " " + weekdayColor + " " + weekdayName
 
-	case lunar: // 农历
+	case "Lunar": // 农历
 		lunarInfo := getLunarInfo(now)
 		return lunarInfo
 
-	case tibetan: // 藏历
+	case "Tibetan": // 藏历
 		tibetanInfo := getTibetanInfo(now)
 		return tibetanInfo
 
@@ -579,21 +578,30 @@ func ShowColorPickerDialog(title, message string, preselected color.RGBA, confir
 }
 
 func ShowItemDialog(dialogPrefix, title, tagEditString, description string, style ItemStyle, confirmedCallback func(title, tagEditString, description string, style ItemStyle)) {
-	ShowItemDialogWithDateType(dialogPrefix, title, tagEditString, description, style, "Normal", func(title, tagEditString, description string, style ItemStyle, dateType string) {
+	ShowItemDialogWithDataType(dialogPrefix, title, tagEditString, description, style, "Normal", func(title, tagEditString, description string, style ItemStyle, dataType string) {
 		confirmedCallback(title, tagEditString, description, style)
 	})
 }
 
-func ShowItemDialogWithDateType(dialogPrefix, title, tagEditString, description string, style ItemStyle, currentDateType string, confirmedCallback func(title, tagEditString, description string, style ItemStyle, dateType string)) {
+func ShowItemDialogWithDataType(dialogPrefix, title, tagEditString, description string, style ItemStyle, currentDataType string, confirmedCallback func(title, tagEditString, description string, style ItemStyle, dataType string)) {
 	titleEntry := widget.NewEntry()
 	titleEntry.SetPlaceHolder("Title ...")
 	titleEntry.SetText(title)
 
-	// 添加日期类型选择
-	greg, lunar, tibetan := getDateTypeLabels()
-	dateTypeOptions := []string{"Normal", greg, lunar, tibetan}
-	dateTypeSelect := widget.NewSelect(dateTypeOptions, nil)
-	dateTypeSelect.SetSelected(currentDateType)
+	// 添加数据类型选择
+	greg, lunar, tibetan := getDataTypeLabels()
+	dataTypeOptions := []string{"Normal", "Gregorian", "Lunar", "Tibetan"}
+	dataTypeSelect := widget.NewSelect(dataTypeOptions, nil)
+	// 设置当前选择的数据类型
+	if currentDataType == greg {
+		dataTypeSelect.SetSelected("Gregorian")
+	} else if currentDataType == lunar {
+		dataTypeSelect.SetSelected("Lunar")
+	} else if currentDataType == tibetan {
+		dataTypeSelect.SetSelected("Tibetan")
+	} else {
+		dataTypeSelect.SetSelected(currentDataType)
+	}
 
 	tagsEntry := widget.NewEntry()
 	tagsEntry.SetPlaceHolder("Tag1=Value1; Tag2=Value2; ...")
@@ -602,6 +610,8 @@ func ShowItemDialogWithDateType(dialogPrefix, title, tagEditString, description 
 	descriptionEntry := widget.NewMultiLineEntry()
 	descriptionEntry.SetPlaceHolder("Description ...")
 	descriptionEntry.SetText(description)
+	// 设置描述输入框的最小尺寸为两倍高度
+	descriptionEntry.Resize(fyne.NewSize(descriptionEntry.MinSize().Width, 400))
 
 	foregroundColor := style.Foreground
 	foregroundColorButton := widget.NewButtonWithIcon("Foregound", theme.ColorPaletteIcon(),
@@ -626,23 +636,52 @@ func ShowItemDialogWithDateType(dialogPrefix, title, tagEditString, description 
 	)
 
 	buttonContainer := container.NewGridWithColumns(2, foregroundColorButton, backgroundColorButton)
-	dialogContainer := container.NewVBox(titleEntry, dateTypeSelect, tagsEntry, descriptionEntry, buttonContainer, canvas.NewText("", color.Black))
+
+	// 创建一个固定尺寸的容器来包装所有组件，实现对话框尺寸加倍
+	contentContainer := container.NewVBox(titleEntry, dataTypeSelect, tagsEntry, descriptionEntry, buttonContainer)
+	// 使用Border容器设置固定尺寸，宽度和高度都比原来大
+	dialogContainer := container.NewBorder(nil, nil, nil, nil, contentContainer)
+	dialogContainer.Resize(fyne.NewSize(600, 400)) // 设置对话框容器的固定尺寸
 
 	dialog.ShowCustomConfirm(dialogPrefix+" Item", "OK", "Cancel", dialogContainer,
 		func(confirmed bool) {
 			if confirmed && confirmedCallback != nil {
-				// 根据选择的日期类型自动添加相应的标签
+				// 根据选择的数据类型处理标签和标题
 				finalTagString := tagsEntry.Text
-				selectedType := dateTypeSelect.Selected
+				selectedType := dataTypeSelect.Selected
+				finalTitle := titleEntry.Text
 
+				// 如果选择了日期类型，将日期信息添加到标题中，标签只显示类型
 				if selectedType != "Normal" {
-					if finalTagString != "" && !strings.HasSuffix(finalTagString, ";") {
-						finalTagString += "; "
+					dateString := getCurrentDateString(selectedType)
+					if dateString != "" {
+						// 将日期信息添加到标题中
+						if finalTitle != "" {
+							finalTitle += " " + dateString
+						} else {
+							finalTitle = dateString
+						}
 					}
-					finalTagString += selectedType + "=" + getCurrentDateString(selectedType)
+					// 标签只显示日期类型的中文名称
+					greg, lunar, tibetan := getDataTypeLabels()
+					typeLabel := ""
+					switch selectedType {
+					case "Gregorian":
+						typeLabel = greg
+					case "Lunar":
+						typeLabel = lunar
+					case "Tibetan":
+						typeLabel = tibetan
+					}
+					if typeLabel != "" {
+						if finalTagString != "" && !strings.HasSuffix(finalTagString, ";") {
+							finalTagString += "; "
+						}
+						finalTagString += typeLabel
+					}
 				}
 
-				confirmedCallback(titleEntry.Text, finalTagString, descriptionEntry.Text, ItemStyle{foregroundColor, backgroundColor}, selectedType)
+				confirmedCallback(finalTitle, finalTagString, descriptionEntry.Text, ItemStyle{foregroundColor, backgroundColor}, selectedType)
 			}
 		}, window,
 	)

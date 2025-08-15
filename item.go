@@ -24,7 +24,7 @@ type Item struct {
 	Tags              []Tag
 	Style             ItemStyle
 	Expanded          bool
-	DateType          string        // 日期类型："Normal", "公历", "农历", "藏历"
+	DataType          string        // 数据类型："Normal", "Gregorian", "Lunar", "Tibetan"
 	dragActive        bool          `json:"-"`
 	dragStartPosition fyne.Position `json:"-"`
 	dragEndPosition   fyne.Position `json:"-"`
@@ -42,8 +42,8 @@ type itemRenderer struct {
 }
 
 /* ================================================================================ Public functions */
-func NewItem(title string, tags []Tag, description string, style ItemStyle, dateType string) *Item {
-	item := &Item{Title: title, Tags: tags, Description: description, Style: style, Expanded: false, DateType: dateType}
+func NewItem(title string, tags []Tag, description string, style ItemStyle, dataType string) *Item {
+	item := &Item{Title: title, Tags: tags, Description: description, Style: style, Expanded: false, DataType: dataType}
 	item.ExtendBaseWidget(item)
 
 	return item
@@ -59,13 +59,13 @@ func (w *Item) NewTagLabel(tag Tag) *TappableCustomLabel {
 }
 
 func (w *Item) ShowEditItemDialog() {
-	ShowItemDialogWithDateType("Edit", w.Title, ComposeTagEditString(w.Tags), w.Description, w.Style, w.DateType,
-		func(title, tagEditString, description string, style ItemStyle, dateType string) {
+	ShowItemDialogWithDataType("Edit", w.Title, ComposeTagEditString(w.Tags), w.Description, w.Style, w.DataType,
+		func(title, tagEditString, description string, style ItemStyle, dataType string) {
 			w.Title = title
 			w.Tags = ParseTagEditString(tagEditString)
 			w.Description = description
 			w.Style = style
-			w.DateType = dateType
+			w.DataType = dataType
 			w.Refresh()
 			autoSave()
 		},
@@ -156,12 +156,12 @@ func (w *Item) DragEnd() {
 		targetItemRelativeEndY := targetStageRelativeEndPosition.Y - targetItem.Position().Y
 		targetItemHeightMidY := (targetItem.Size().Height / 2)
 		if targetItemRelativeEndY < targetItemHeightMidY {
-			targetStage.InsertItemWithDateType(false, targetItem, w.Title, w.Tags, w.Description, w.Style, w.DateType)
-		} else {
-			targetStage.InsertItemWithDateType(true, targetItem, w.Title, w.Tags, w.Description, w.Style, w.DateType)
-		}
+			targetStage.InsertItemWithDataType(false, targetItem, w.Title, w.Tags, w.Description, w.Style, w.DataType)
 	} else {
-		targetStage.AppendItemWithDateType(w.Title, w.Tags, w.Description, w.Style, w.DateType)
+		targetStage.InsertItemWithDataType(true, targetItem, w.Title, w.Tags, w.Description, w.Style, w.DataType)
+	}
+} else {
+	targetStage.AppendItemWithDataType(w.Title, w.Tags, w.Description, w.Style, w.DataType)
 	}
 
 	sourceStage.RemoveItem(w)
