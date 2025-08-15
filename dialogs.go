@@ -653,16 +653,19 @@ func ShowItemDialogWithDataType(dialogPrefix, title, tagEditString, description 
 
 				// 如果选择了日期类型，将日期信息添加到标题中，标签只显示类型
 				if selectedType != "Normal" {
-					dateString := getCurrentDateString(selectedType)
-					if dateString != "" {
-						// 将日期信息添加到标题中
-						if finalTitle != "" {
-							finalTitle += " " + dateString
-						} else {
-							finalTitle = dateString
+					// 只有在创建新项目时（dialogPrefix为"Add"）才自动添加日期信息
+					if dialogPrefix == "Add" {
+						dateString := getCurrentDateString(selectedType)
+						if dateString != "" {
+							// 将日期信息添加到标题中
+							if finalTitle != "" {
+								finalTitle += " " + dateString
+							} else {
+								finalTitle = dateString
+							}
 						}
 					}
-					// 标签只显示日期类型的中文名称
+					// 标签只显示日期类型的中文名称，但要检查是否已存在避免重复
 					greg, lunar, tibetan := getDataTypeLabels()
 					typeLabel := ""
 					switch selectedType {
@@ -673,7 +676,8 @@ func ShowItemDialogWithDataType(dialogPrefix, title, tagEditString, description 
 					case "Tibetan":
 						typeLabel = tibetan
 					}
-					if typeLabel != "" {
+					// 检查标签中是否已经包含该类型，避免重复添加
+					if typeLabel != "" && !strings.Contains(finalTagString, typeLabel) {
 						if finalTagString != "" && !strings.HasSuffix(finalTagString, ";") {
 							finalTagString += "; "
 						}

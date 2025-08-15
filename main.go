@@ -226,16 +226,22 @@ func updateDateItems() {
 	for _, stage := range board.Stages {
 		for _, item := range stage.Items {
 			if item.DataType != "Normal" && item.DataType != "" {
-			// 更新日期标签
-			updatedTags := []Tag{}
-			dataTypeFound := false
+				// 总是更新日历类型项目的标题为当前日期信息
+				dateString := getCurrentDateString(item.DataType)
+				if dateString != "" {
+					item.Title = dateString
+				}
 
-			for _, tag := range item.Tags {
-				if strings.HasPrefix(tag.Expression, item.DataType+"=") {
-					// 更新现有的日期标签
-					newDateString := getCurrentDateString(item.DataType)
-					updatedTags = append(updatedTags, Tag{Expression: item.DataType + "=" + newDateString})
-					dataTypeFound = true
+				// 更新日期标签
+				updatedTags := []Tag{}
+				dataTypeFound := false
+
+				for _, tag := range item.Tags {
+					if strings.HasPrefix(tag.Expression, item.DataType+"=") {
+						// 更新现有的日期标签
+						newDateString := getCurrentDateString(item.DataType)
+						updatedTags = append(updatedTags, Tag{Expression: item.DataType + "=" + newDateString})
+						dataTypeFound = true
 					} else {
 						updatedTags = append(updatedTags, tag)
 					}
@@ -244,8 +250,9 @@ func updateDateItems() {
 				// 只有找到日期标签时才更新，不再自动添加新的日期标签
 				if dataTypeFound {
 					item.Tags = updatedTags
-					item.Refresh()
 				}
+				
+				item.Refresh()
 			}
 		}
 	}
