@@ -119,6 +119,7 @@ func (w *Item) SetFilterTags(filterTags []Tag) {
 func (w *Item) ToggleExpanded() {
 	w.Expanded = !w.Expanded
 	w.Refresh()
+	autoSave()
 }
 
 func (w *Item) Dragged(event *fyne.DragEvent) {
@@ -263,7 +264,10 @@ func (r itemRenderer) MinSize() fyne.Size {
 		descriptionSize.Height = 0
 	}
 
-	minWidth := fyne.Max(tagsLineMaxWidth, fyne.Max(titleSize.Width+toolbarWidth, descriptionSize.Width))
+	// 限制title和description对item宽度的影响，使用固定的最小宽度
+	minTitleWidth := float32(200) + toolbarWidth // 设置一个合理的最小宽度
+	// 不使用descriptionSize.Width，避免长内容撑开item宽度
+	minWidth := fyne.Max(tagsLineMaxWidth, minTitleWidth)
 	minHeight := headerHeight + tagsBlockHeight + descriptionSize.Height
 
 	return fyne.NewSize(minWidth, Round(minHeight))

@@ -2,26 +2,24 @@ package main
 
 /* Board is the top-level widget type describing a kanban board, which contains and manages stages */
 
-
 /* ================================================================================ Imports */
 import (
 	"encoding/json"
+
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/widget"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 )
-
 
 /* ================================================================================ Public types */
 type Board struct {
-	widget.BaseWidget                          `json:"-"`
-	Name            string
-	Stages          []*Stage
-	FilterTags      []Tag                      `json:"-"`
-	OnFilterChanged func(tagEditString string) `json:"-"`
+	widget.BaseWidget `json:"-"`
+	Name              string
+	Stages            []*Stage
+	FilterTags        []Tag                      `json:"-"`
+	OnFilterChanged   func(tagEditString string) `json:"-"`
 }
-
 
 /* ================================================================================ Private types */
 type boardRenderer struct {
@@ -29,15 +27,13 @@ type boardRenderer struct {
 	w              *Board
 }
 
-
 /* ================================================================================ Public functions */
 func NewBoard(name string, filterChanged func(tagEditString string)) *Board {
-	board := &Board{ Name: name, OnFilterChanged: filterChanged }
+	board := &Board{Name: name, OnFilterChanged: filterChanged}
 	board.ExtendBaseWidget(board)
 
 	return board
 }
-
 
 /* ================================================================================ Public methods */
 func (w *Board) Clear() {
@@ -45,11 +41,9 @@ func (w *Board) Clear() {
 	w.Refresh()
 }
 
-
 func (w *Board) Data() ([]byte, error) {
 	return json.Marshal(w)
 }
-
 
 func (w *Board) Load(data []byte) error {
 	if err := json.Unmarshal(data, w); err != nil {
@@ -60,7 +54,6 @@ func (w *Board) Load(data []byte) error {
 	return nil
 }
 
-
 func (w *Board) StageIndex(toFind *Stage) int {
 	for i, stage := range w.Stages {
 		if stage == toFind {
@@ -69,7 +62,6 @@ func (w *Board) StageIndex(toFind *Stage) int {
 	}
 	return -1
 }
-
 
 func (w *Board) ItemStageIndex(toFind *Item) int {
 	for i, stage := range w.Stages {
@@ -80,7 +72,6 @@ func (w *Board) ItemStageIndex(toFind *Item) int {
 	return -1
 }
 
-
 func (w *Board) ItemStage(toFind *Item) *Stage {
 	i := w.ItemStageIndex(toFind)
 	if i < 0 {
@@ -90,10 +81,9 @@ func (w *Board) ItemStage(toFind *Item) *Stage {
 	return w.Stages[i]
 }
 
-
 func (w *Board) StageAtPosition(position fyne.Position) *Stage {
 	for _, stage := range w.Stages {
-		stageRect := Rectangle{ stage.Position(), stage.Size() }
+		stageRect := Rectangle{stage.Position(), stage.Size()}
 
 		if stageRect.Contains(position) {
 			return stage
@@ -102,7 +92,6 @@ func (w *Board) StageAtPosition(position fyne.Position) *Stage {
 	return nil
 }
 
-
 func (w *Board) AppendStage(title string) {
 	stage := NewStage(title)
 
@@ -110,7 +99,6 @@ func (w *Board) AppendStage(title string) {
 	w.Refresh()
 	autoSave()
 }
-
 
 func (w *Board) RemoveStage(toRemove *Stage) bool {
 	i := w.StageIndex(toRemove)
@@ -125,7 +113,6 @@ func (w *Board) RemoveStage(toRemove *Stage) bool {
 	return true
 }
 
-
 func (w *Board) RemoveItem(toRemove *Item) {
 	for _, stage := range w.Stages {
 		if stage.RemoveItem(toRemove) {
@@ -135,7 +122,6 @@ func (w *Board) RemoveItem(toRemove *Item) {
 	}
 }
 
-
 func (w *Board) ShowCreateStageDialog() {
 	ShowEntryDialog("New Stage", "Title ...", "",
 		func(text string) {
@@ -144,19 +130,16 @@ func (w *Board) ShowCreateStageDialog() {
 	)
 }
 
-
 func (w *Board) ApplyTagFilter() {
 	for _, stage := range w.Stages {
 		stage.SetFilterTags(w.FilterTags)
 	}
 }
 
-
 func (w *Board) SetTagFilter(tagEditString string) {
 	w.FilterTags = ParseTagEditString(tagEditString)
 	w.ApplyTagFilter()
 }
-
 
 func (w *Board) FilterTagIndex(toFind Tag) int {
 	for i, filterTag := range w.FilterTags {
@@ -166,7 +149,6 @@ func (w *Board) FilterTagIndex(toFind Tag) int {
 	}
 	return -1
 }
-
 
 func (w *Board) ToggleFilterTag(tag Tag) {
 	i := w.FilterTagIndex(tag)
@@ -183,20 +165,19 @@ func (w *Board) ToggleFilterTag(tag Tag) {
 	}
 }
 
-
 /* ================================================================================ Public rendering methods */
 func (w *Board) CreateRenderer() fyne.WidgetRenderer {
 	w.ExtendBaseWidget(w)
 
 	// TODO: for small screens
-/*
-	stageContainer := container.NewAppTabs(
-		container.NewTabItem("Tab 1", widget.NewLabel("Hello")),
-		container.NewTabItem("Tab 2", widget.NewLabel("World!")),
-	)
-	//tabs.Append(container.NewTabItemWithIcon("Home", theme.HomeIcon(), widget.NewLabel("Home tab")))
-	tabs.SetTabLocation(container.TabLocationTop)
-*/
+	/*
+		stageContainer := container.NewAppTabs(
+			container.NewTabItem("Tab 1", widget.NewLabel("Hello")),
+			container.NewTabItem("Tab 2", widget.NewLabel("World!")),
+		)
+		//tabs.Append(container.NewTabItemWithIcon("Home", theme.HomeIcon(), widget.NewLabel("Home tab")))
+		tabs.SetTabLocation(container.TabLocationTop)
+	*/
 
 	stageContainer := container.NewWithoutLayout()
 
@@ -209,22 +190,19 @@ func (w *Board) CreateRenderer() fyne.WidgetRenderer {
 		}
 	}
 
-	return &boardRenderer{ stageContainer, w }
+	return &boardRenderer{stageContainer, w}
 }
-
 
 func (r boardRenderer) Layout(size fyne.Size) {
 	r.stageContainer.Resize(size)
 	r.stageContainer.Move(fyne.NewPos(0, 0))
 }
 
-
 func (r boardRenderer) MinSize() fyne.Size {
 	containerSize := r.stageContainer.MinSize()
 
 	return fyne.NewSize(containerSize.Width, containerSize.Height)
 }
-
 
 func (r boardRenderer) Refresh() {
 	for _, stage := range r.stageContainer.Objects {
@@ -238,11 +216,9 @@ func (r boardRenderer) Refresh() {
 	}
 }
 
-
 func (r boardRenderer) Objects() []fyne.CanvasObject {
-	return []fyne.CanvasObject{ r.stageContainer }
+	return []fyne.CanvasObject{r.stageContainer}
 }
-
 
 func (r boardRenderer) Destroy() {
 }
