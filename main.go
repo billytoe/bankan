@@ -52,16 +52,15 @@ func restorePreferences() {
 	saveFileURI = nil
 
 	uriString := fyne.CurrentApp().Preferences().String("saveFileURI")
-	if uriString == "" {
-		return
+	if uriString != "" {
+		uri, err := storage.ParseURI(uriString)
+		if err == nil {
+			saveFileURI = uri
+		}
 	}
 
-	uri, err := storage.ParseURI(uriString)
-	if err != nil {
-		return
-	}
-
-	saveFileURI = uri
+	// 恢复字体大小设置
+	RestoreFontSizeLevel()
 }
 
 func autoSave() {
@@ -182,10 +181,34 @@ func showEditBoardNameDialog() {
 
 func showBoardMenu() {
 	menu := widget.NewPopUpMenu(
-		fyne.NewMenu("Board", fyne.NewMenuItem("Edit Board Name", showEditBoardNameDialog)),
+		fyne.NewMenu("Board", 
+			fyne.NewMenuItem("Edit Board Name", showEditBoardNameDialog),
+			fyne.NewMenuItemSeparator(),
+			fyne.NewMenuItem("字体大小: "+GetCurrentFontSizeLevelName(), showFontSizeMenu),
+		),
 		window.Canvas(),
 	)
 	menu.ShowAtPosition(fyne.NewPos(boardToolbar.Position().X-menu.Size().Width+50, boardToolbar.Position().Y+menu.Size().Height))
+}
+
+func showFontSizeMenu() {
+	menu := widget.NewPopUpMenu(
+		fyne.NewMenu("字体大小",
+			fyne.NewMenuItem("小 (当前: "+GetFontSizeLevelName(FONT_SIZE_SMALL)+")", func() { setFontSize(FONT_SIZE_SMALL) }),
+			fyne.NewMenuItem("中 (当前: "+GetFontSizeLevelName(FONT_SIZE_MEDIUM)+")", func() { setFontSize(FONT_SIZE_MEDIUM) }),
+			fyne.NewMenuItem("大 (当前: "+GetFontSizeLevelName(FONT_SIZE_LARGE)+")", func() { setFontSize(FONT_SIZE_LARGE) }),
+		),
+		window.Canvas(),
+	)
+	menu.ShowAtPosition(fyne.NewPos(boardToolbar.Position().X-menu.Size().Width+50, boardToolbar.Position().Y+menu.Size().Height))
+}
+
+func setFontSize(level int) {
+	SetFontSizeLevel(level)
+	// 刷新整个界面以应用新的字体大小
+	board.Refresh()
+	boardNameLabel.Refresh()
+	window.Content().Refresh()
 }
 
 func boardFilterChanged(tagEditString string) {
@@ -218,14 +241,11 @@ func updateDateItems() {
 					}
 				}
 
-				// 如果没有找到日期标签，添加一个
-				if !dateTypeFound {
-					newDateString := getCurrentDateString(item.DateType)
-					updatedTags = append(updatedTags, Tag{Expression: item.DateType + "=" + newDateString})
+				// 只有找到日期标签时才更新，不再自动添加新的日期标签
+				if dateTypeFound {
+					item.Tags = updatedTags
+					item.Refresh()
 				}
-
-				item.Tags = updatedTags
-				item.Refresh()
 			}
 		}
 	}
@@ -277,7 +297,7 @@ func main() {
 
 	leftHeaderContainer := container.NewGridWithColumns(2, fileToolbar, filterEntry)
 
-	boardNameLabel = NewCustomLabel(fyne.TextAlignCenter, PaintStyle{color.RGBA{255, 255, 255, 255}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, 0}, false, board.Name, theme.TextSubHeadingSize(), fyne.TextStyle{}, Paddings{1.0, 1.0, 1.0, 1.0}, Paddings{0.0, 0.0, 0.0, 0.0})
+	boardNameLabel = NewCustomLabel(fyne.TextAlignCenter, PaintStyle{color.RGBA{255, 255, 255, 255}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, 0}, false, board.Name, GetScaledTextSubHeadingSize(), fyne.TextStyle{}, Paddings{1.0, 1.0, 1.0, 1.0}, Paddings{0.0, 0.0, 0.0, 0.0})
 	boardNameContainer := container.NewHBox(layout.NewSpacer(), boardNameLabel, layout.NewSpacer())
 
 	boardToolbar = widget.NewToolbar(

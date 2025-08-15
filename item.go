@@ -51,7 +51,7 @@ func NewItem(title string, tags []Tag, description string, style ItemStyle, date
 
 /* ================================================================================ Public methods */
 func (w *Item) NewTagLabel(tag Tag) *TappableCustomLabel {
-	return NewTappableCustomLabel(fyne.TextAlignCenter, PaintStyle{w.Style.Background, w.Style.Foreground, color.RGBA{0, 0, 0, 0}, 1}, false, tag.DisplayString(), theme.CaptionTextSize(), fyne.TextStyle{Italic: true}, Paddings{0.0, 1.0, 1.0, 0.5}, Paddings{0.0, 0.0, 2.0, 2.0},
+	return NewTappableCustomLabel(fyne.TextAlignCenter, PaintStyle{w.Style.Background, w.Style.Foreground, color.RGBA{0, 0, 0, 0}, 1}, false, tag.DisplayString(), GetScaledCaptionTextSize(), fyne.TextStyle{Italic: true}, Paddings{0.0, 1.0, 1.0, 0.5}, Paddings{0.0, 0.0, 2.0, 2.0},
 		func() {
 			board.ToggleFilterTag(tag)
 		},
@@ -172,7 +172,7 @@ func (w *Item) CreateRenderer() fyne.WidgetRenderer {
 	w.ExtendBaseWidget(w)
 
 	background := canvas.NewRectangle(w.Style.Background)
-	titleLabel := NewTappableCustomLabel(fyne.TextAlignLeading, PaintStyle{w.Style.Foreground, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, 0}, true, w.Title, theme.TextSize(), fyne.TextStyle{Bold: true}, Paddings{0.0, 0.25, 1.0, 0.0}, Paddings{0.0, 0.0, 0.0, 0.0}, w.ToggleExpanded)
+	titleLabel := NewTappableCustomLabel(fyne.TextAlignLeading, PaintStyle{w.Style.Foreground, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, 0}, true, w.Title, GetScaledTextSize(), fyne.TextStyle{Bold: true}, Paddings{0.0, 0.25, 1.0, 0.0}, Paddings{0.0, 0.0, 0.0, 0.0}, w.ToggleExpanded)
 	toolbarBackground := canvas.NewCircle(color.RGBA{0, 0, 0, 127})
 	toolbar := widget.NewToolbar(widget.NewToolbarAction(theme.MoreVerticalIcon(), w.ShowItemMenu))
 	tagLabels := make([]*TappableCustomLabel, len(w.Tags))
@@ -181,7 +181,7 @@ func (w *Item) CreateRenderer() fyne.WidgetRenderer {
 		tagLabels[i] = w.NewTagLabel(tag)
 	}
 
-	descriptionLabel := NewTappableCustomLabel(fyne.TextAlignLeading, PaintStyle{w.Style.Foreground, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, 0}, true, w.Description, theme.TextSize(), fyne.TextStyle{Monospace: true}, Paddings{0.0, 1.0, 1.0, 0.5}, Paddings{0.0, 0.0, 0.0, 0.0}, w.ToggleExpanded)
+	descriptionLabel := NewTappableCustomLabel(fyne.TextAlignLeading, PaintStyle{w.Style.Foreground, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, 0}, true, w.Description, GetScaledTextSize(), fyne.TextStyle{Monospace: true}, Paddings{0.0, 1.0, 1.0, 0.5}, Paddings{0.0, 0.0, 0.0, 0.0}, w.ToggleExpanded)
 
 	if !w.Expanded {
 		descriptionLabel.Hide()
@@ -192,7 +192,7 @@ func (w *Item) CreateRenderer() fyne.WidgetRenderer {
 
 func (r itemRenderer) Layout(size fyne.Size) {
 	headerHeight := Round(r.titleLabel.MinSize().Height)
-	toolbarHeight := fyne.MeasureText(r.w.Title, theme.TextSize(), fyne.TextStyle{Bold: true}).Height
+	toolbarHeight := fyne.MeasureText(r.w.Title, GetScaledTextSize(), fyne.TextStyle{Bold: true}).Height
 	toolbarWidth := r.toolbar.MinSize().Width
 	toolbarBackgroundPadding := theme.Padding() / 2
 	toolbarBackgroundOffset := toolbarBackgroundPadding / 2

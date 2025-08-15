@@ -175,7 +175,7 @@ func (w *Stage) SetFilterTags(filterTags []Tag) {
 func (w *Stage) CreateRenderer() fyne.WidgetRenderer {
 	w.ExtendBaseWidget(w)
 
-	titleLabel := NewCustomLabel(fyne.TextAlignLeading, PaintStyle{color.RGBA{255, 255, 255, 255}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, 0}, false, w.Title, theme.TextSubHeadingSize(), fyne.TextStyle{Italic: true}, Paddings{1.0, 1.0, 1.0, 1.0}, Paddings{0.0, 0.0, 0.0, 0.0})
+	titleLabel := NewCustomLabel(fyne.TextAlignLeading, PaintStyle{color.RGBA{255, 255, 255, 255}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, 0}, false, w.Title, GetScaledTextSubHeadingSize(), fyne.TextStyle{Italic: true}, Paddings{1.0, 1.0, 1.0, 1.0}, Paddings{0.0, 0.0, 0.0, 0.0})
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.ContentAddIcon(), w.ShowCreateItemDialog),
 		widget.NewToolbarAction(theme.MoreVerticalIcon(), w.ShowStageMenu),
